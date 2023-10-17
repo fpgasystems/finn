@@ -339,6 +339,7 @@ class InsertAndSetFIFODepths(Transformation):
             # set sufficiently large threshold for 1 image to  fully execute and exit
             ncycles = int(latency + max_cycles)
 
+
             # prepare pyverilator model
             sim = pyverilate_stitched_ip(model)
 
@@ -383,7 +384,7 @@ class InsertAndSetFIFODepths(Transformation):
                 # convnet, two inputs are typically enough to fill entire
                 # layer pipeline due to overlaps
                 n_inputs = 2
-            sim = verilator_fifosim(model, n_inputs)
+            sim = verilator_fifosim(model, n_inputs, max_iters=10000)
 
         for ind, node in enumerate(fifo_nodes):
             maxcount_name = "maxcount_%d" % ind
