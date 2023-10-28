@@ -27,8 +27,6 @@
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-set -e
-
 RED='\033[0;31m'
 GREEN='\033[0;32m'
 NC='\033[0m' # No Color
@@ -150,7 +148,6 @@ elif [ -z "$1" ]; then
 else
   gecho "Running container with passed arguments"
   DOCKER_CMD="$@"
-  FINN_DOCKER_EXTRA+="-p $NETRON_PORT:$NETRON_PORT "
 fi
 
 
