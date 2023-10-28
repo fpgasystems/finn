@@ -150,6 +150,7 @@ elif [ -z "$1" ]; then
 else
   gecho "Running container with passed arguments"
   DOCKER_CMD="$@"
+  FINN_DOCKER_EXTRA+="-p $NETRON_PORT:$NETRON_PORT "
 fi
 
 
