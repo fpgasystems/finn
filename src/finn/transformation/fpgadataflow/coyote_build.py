@@ -968,6 +968,8 @@ class GenerateCoyoteProject(Transformation):
 
         os.chdir(finn_cwd)
 
+        model.set_metadata_prop("coyote_hw_build", self.coyote_hw_build_dir.__str__())
+
         return (model, False)
 
 
