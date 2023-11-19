@@ -1439,6 +1439,8 @@ class CoyoteBuild(Transformation):
             ]
             return (ips, axilites_connections, intra_connections_tcl, address_map_outer)
 
+        # NOTE: AXI4L address sent through the Coyote interface start at 0x12_0000
+        COYOTE_BASE_ADDR = 0x12_0000
         (
             interconnects,
             interconnects_axilites_connections,
