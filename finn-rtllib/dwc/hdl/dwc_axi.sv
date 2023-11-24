@@ -52,8 +52,6 @@ module dwc_axi #(
 	output	logic  m_axis_tvalid,
 	output	logic [AXI_OBITS-1:0]  m_axis_tdata
 );
-	uwire  clk = ap_clk;
-	uwire  rst = !ap_rst_n;
 
 	dwc #(.IBITS(IBITS), .OBITS(OBITS)) core (
 		.clk(ap_clk), .rst(!ap_rst_n),
