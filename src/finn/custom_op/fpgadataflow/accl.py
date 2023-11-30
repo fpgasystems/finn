@@ -4,7 +4,6 @@ import psutil
 import subprocess
 import threading
 import time
-import traceback
 import warnings
 from collections import defaultdict
 
@@ -69,11 +68,13 @@ class ACCLOp(HLSCustomOp):
         with ACCLOp.lock:
             barrier = ACCLOp.barriers[edge_name]
 
-        timeout_s = 5
+        timeout_s = 60
         idx = barrier.wait(timeout=timeout_s)
 
         emulator = None
         try:
+            executable_path = self.get_nodeattr("executable_path")
+
             if executable_path == "":
                 name = self.onnx_node.name
                 raise Exception(
@@ -94,7 +95,7 @@ class ACCLOp(HLSCustomOp):
                     "python3", "run.py", f"-n {world_size}", "--no-kernel-loopback"
                 ], cwd=emulator_dir)
 
-            executable_path = self.get_nodeattr("executable_path")
+            barrier.wait(timeout=60)
 
             p = subprocess.Popen(
                 executable_path,
@@ -113,9 +114,9 @@ class ACCLOp(HLSCustomOp):
             barrier.wait(timeout=timeout_s)
             p.communicate("...", timeout=timeout_s)
             barrier.wait(timeout=timeout_s)
-        except Exception:
-            print(traceback.format_exc())
+        except Exception as e:
             barrier.abort()
+            raise e
         finally:
             if emulator is not None:
                 parent_proc = psutil.Process(emulator.pid)

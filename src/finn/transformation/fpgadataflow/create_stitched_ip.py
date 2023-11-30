@@ -292,13 +292,13 @@ class CreateStitchedIP(Transformation):
                 "set_property name data_from_cclo_0 [get_bd_intf_ports s_axis_0]"
             )
             self.connect_cmds.append(
-                "create_bd_intf_port -mode Slave"
+                "create_bd_intf_port -mode Slave "
                 "-vlnv xilinx.com:interface:axis_rtl:1.0 s_axis_0"
             )
             unused_src = "s_axis_0"
         else:
             self.connect_cmds.append(
-                "create_bd_intf_port -mode Slave"
+                "create_bd_intf_port -mode Slave "
                 "-vlnv xilinx.com:interface:axis_rtl:1.0 data_from_cclo_0"
             )
             unused_src = "data_from_cclo_0"
@@ -335,15 +335,15 @@ class CreateStitchedIP(Transformation):
             unused_sink = "m_axis_0"
         else:
             self.connect_cmds.append(
-                "create_bd_intf_port -mode Master"
+                "create_bd_intf_port -mode Master "
                 "-vlnv xilinx.com:interface:axis_rtl:1.0 cmd_to_cclo_0"
             )
             self.connect_cmds.append(
-                "create_bd_intf_port -mode Slave"
+                "create_bd_intf_port -mode Slave "
                 "-vlnv xilinx.com:interface:axis_rtl:1.0 sts_from_cclo_0"
             )
             self.connect_cmds.append(
-                "create_bd_intf_port -mode Master"
+                "create_bd_intf_port -mode Master "
                 "-vlnv xilinx.com:interface:axis_rtl:1.0 data_to_cclo_0"
             )
             unused_sink = "data_to_cclo_0"

@@ -60,7 +60,7 @@ cfg_splits = build.DataflowBuildConfig(
     verify_steps        = [build_cfg.VerificationStepType.FOLDED_HLS_CPPSIM],
     shell_flow_type     = build_cfg.ShellFlowType.VITIS_ALVEO,
     board               = "U55C",
-    num_boards          = 3,
+    num_boards          = 2,
     # start_step="step_create_stitched_ip",
     save_intermediate_models = True,
 )
