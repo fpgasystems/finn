@@ -496,7 +496,6 @@ platforms["U50"] = Alveo_NxU50_Platform
 platforms["U200"] = Alveo_NxU200_Platform
 platforms["U250"] = Alveo_NxU250_Platform
 platforms["U280"] = Alveo_NxU280_Platform
-platforms["U55C"] = Alveo_NxU55C_Platform
 platforms["Pynq-Z1"] = Zynq7020_Platform
 platforms["Pynq-Z2"] = Zynq7020_Platform
 platforms["Ultra96"] = ZU3EG_Platform
