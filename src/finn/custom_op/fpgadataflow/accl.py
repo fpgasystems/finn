@@ -226,7 +226,7 @@ class ACCLOut(ACCLOp):
             '#pragma HLS INTERFACE axis port=in0_{}'.format(self.hls_sname()),
             "#pragma HLS INTERFACE s_axilite port=dpcfg_adr bundle=control",
             "#pragma HLS INTERFACE s_axilite port=comm_adr bundle=control",
-            "#pragma HLS INTERFACE s_axilite port=return bundle=control",
+            "#pragma HLS INTERFACE ap_ctrl_none port=return",
         ]
 
     def strm_decl(self):
@@ -280,18 +280,19 @@ class ACCLOut(ACCLOp):
         dest = self.get_nodeattr("otherRank")
 
         self.code_gen_dict["$DOCOMPUTE$"] = [
-            '''
-            accl_out<{}, {}, {}>(
-                {},
-                comm_adr,
-                dpcfg_adr,
-                cmd_to_cclo,
-                sts_from_cclo,
-                data_to_cclo,
-                in0_{},
-                wait_for_ack
-            );'''.format(stream_width, num_bits, step, dest, self.hls_sname()),
-            '''
+            f'''
+            if (!in0_{self.hls_sname()}.empty()) {{
+                accl_out<{stream_width}, {num_bits}, {step}>(
+                    {dest},
+                    comm_adr,
+                    dpcfg_adr,
+                    cmd_to_cclo,
+                    sts_from_cclo,
+                    data_to_cclo,
+                    in0_{self.hls_sname()},
+                    wait_for_ack
+                );
+            }}
             #ifdef CPPSIM
             cclo->stop();
             #endif
@@ -536,7 +537,8 @@ class ACCLIn(ACCLOp):
         self.code_gen_dict["$BLACKBOXFUNCTION$"] = [
             '''void {}(
                 STREAM<stream_word> &data_from_cclo,
-                hls::stream<ap_uint<{}>> &out_{}
+                hls::stream<ap_uint<{}>> &out_{},
+                int dummy
             )''' .format(
                 self.onnx_node.name,
                 self.get_outstream_width(),

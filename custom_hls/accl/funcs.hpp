@@ -38,6 +38,17 @@ void accl_out(
     bool leftover = num_bits % accl_width != 0;
     int num_transfer_bits = ((num_bits + accl_width - 1) / accl_width) * accl_width;
 
+    unsigned int data_from_cclo_id = 9;
+
+    // Currently the hls driver does not allow us to make an async call, so we have to do
+    // it manually.
+    accl.start_call(
+        ACCL_SEND, num_transfer_bits / 32,
+        comm_adr, dest_rank, 0, data_from_cclo_id,
+        dpcfg_adr, cflags, sflags | 0x2,
+        0, 0, 0
+    );
+
     send: for (int i = 0; i < num_bits - step + 1; i += step) {
         if (i % stream_width == 0) {
             stream_word = in.read();
@@ -56,18 +67,6 @@ void accl_out(
     if (num_bits < num_transfer_bits) {
         data.push(accl_word, 0);
     }
-
-
-    unsigned int data_from_cclo_id = 9;
-
-    // Currently the hls driver does not allow us to make an async call, so we have to do
-    // it manually.
-    accl.start_call(
-        ACCL_SEND, num_transfer_bits / 32,
-        comm_adr, dest_rank, 0, data_from_cclo_id, 
-        dpcfg_adr, cflags, sflags | 0x2, 
-        0, 0, 0
-    );
 
 #ifdef CPPSIM
     std::cerr << "accl_out waiting on ack" << std::endl;

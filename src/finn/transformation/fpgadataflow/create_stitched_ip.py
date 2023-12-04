@@ -87,7 +87,7 @@ class CreateStitchedIP(Transformation):
     The packaged block design IP can be found under the ip subdirectory.
     """
 
-    def __init__(self, fpgapart, clk_ns, ip_name="finn_design", vitis=False, signature=[]):
+    def __init__(self, fpgapart, clk_ns, ip_name="finn_design", vitis=False, signature=[], skip_accl_interface=False):
         super().__init__()
         self.fpgapart = fpgapart
         self.clk_ns = clk_ns
@@ -111,6 +111,7 @@ class CreateStitchedIP(Transformation):
             "aximm": [],
             "axilite": [],
         }
+        self.skip_accl_interface = skip_accl_interface
 
     def connect_clk_rst(self, node):
         inst_name = node.name
@@ -450,7 +451,7 @@ class CreateStitchedIP(Transformation):
             issubclass(type(getCustomOp(node)), ACCLOp)
             for node in model.graph.node
         )
-        if has_accl_node:
+        if has_accl_node and not self.skip_accl_interface:
             self.setup_accl_interface(model)
 
         if self.signature:

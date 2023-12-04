@@ -41,7 +41,7 @@ steps = [
     "step_generate_estimate_reports",
     "step_hls_codegen",
     "step_hls_ipgen",
-    # "step_set_fifo_depths",
+    "step_set_fifo_depths",
     "step_create_stitched_ip",
 ]
 
@@ -61,7 +61,7 @@ cfg_splits = build.DataflowBuildConfig(
     shell_flow_type     = build_cfg.ShellFlowType.VITIS_ALVEO,
     board               = "U55C",
     num_boards          = 2,
-    # start_step="step_create_stitched_ip",
+    # start_step="step_set_fifo_depths",
     save_intermediate_models = True,
 )
 
