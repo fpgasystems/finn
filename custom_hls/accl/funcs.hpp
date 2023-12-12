@@ -19,35 +19,32 @@ void accl_out(
 ) {
     STREAM<stream_word> data_from_cclo;
 
+#ifdef CPPSIM
+    std::cerr << "accl_out initializing cmd struct" << std::endl;
+#endif
+
     ap_uint<32> cflags = 0;
     ap_uint<32> sflags = 3;
+
     accl_hls::ACCLCommand accl(
         cmd_to_cclo, sts_from_cclo,
         comm_adr, dpcfg_adr,
         cflags, sflags
     );
-    accl_hls::ACCLData data(data_to_cclo, data_from_cclo);
-
-    ap_uint<accl_width> accl_word;
-    ap_uint<stream_width> stream_word;
-
-#ifdef CPPSIM
-    std::cerr << "accl_out starting to output data to rank " << dest_rank << " (" << num_bits << " bits)" << std::endl;
-#endif
 
     bool leftover = num_bits % accl_width != 0;
     int num_transfer_bits = ((num_bits + accl_width - 1) / accl_width) * accl_width;
 
     unsigned int data_from_cclo_id = 9;
 
-    // Currently the hls driver does not allow us to make an async call, so we have to do
-    // it manually.
-    accl.start_call(
-        ACCL_SEND, num_transfer_bits / 32,
-        comm_adr, dest_rank, 0, data_from_cclo_id,
-        dpcfg_adr, cflags, sflags | 0x2,
-        0, 0, 0
-    );
+#ifdef CPPSIM
+    std::cerr << "accl_out starting to output data to rank " << dest_rank << " (" << num_bits << " bits)" << std::endl;
+#endif
+
+    accl_hls::ACCLData data(data_to_cclo, data_from_cclo);
+
+    ap_uint<accl_width> accl_word;
+    ap_uint<stream_width> stream_word;
 
     send: for (int i = 0; i < num_bits - step + 1; i += step) {
         if (i % stream_width == 0) {
@@ -67,6 +64,15 @@ void accl_out(
     if (num_bits < num_transfer_bits) {
         data.push(accl_word, 0);
     }
+
+    // Currently the hls driver does not allow us to make an async call, so we have to do
+    // it manually.
+    accl.start_call(
+        ACCL_SEND, num_transfer_bits / 32,
+        comm_adr, dest_rank, 0, data_from_cclo_id,
+        dpcfg_adr, cflags, sflags | 0x2,
+        0, 0, 0
+    );
 
 #ifdef CPPSIM
     std::cerr << "accl_out waiting on ack" << std::endl;

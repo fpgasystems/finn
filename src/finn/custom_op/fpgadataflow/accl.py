@@ -15,6 +15,29 @@ from finn.custom_op.fpgadataflow.hlscustomop import HLSCustomOp
 
 accl_word_size = 512
 
+def start_emulator(world_size, emulation_type='cpp'):
+    assert emulation_type in ["cpp", "rtl"]
+
+    if emulation_type == "cpp":
+        build_dir = f"{os.environ['FINN_ROOT']}/ACCL/test/model/emulator"
+    elif emulation_type == "rtl":
+        hw_build_dir = f"{os.environ['FINN_ROOT']}/ACCL/kernels/cclo"
+        subprocess.run(
+            ["make", "STACK_TYPE=TCP", "EN_FANIN=1", "simdll"],
+            cwd=hw_build_dir,
+            stdout=subprocess.PIPE
+        )
+        build_dir = f"{os.environ['FINN_ROOT']}/ACCL/test/model/simulator"
+
+    subprocess.run(
+        ["/usr/bin/cmake", "."],
+        cwd=build_dir,
+    )
+
+    return subprocess.Popen([
+        "python3", "run.py", f"-n {world_size}", "--no-kernel-loopback", "-l 0",
+    ], cwd=build_dir)
+
 class ACCLOp(HLSCustomOp):
     lock = threading.Lock()
     barriers = defaultdict(lambda: threading.Barrier(2))
@@ -65,6 +88,9 @@ class ACCLOp(HLSCustomOp):
         self.set_nodeattr("executable_path", code_gen_dir + "/node_model")
 
     def execute_op(self, edge_name):
+        def node_print(s, **kwargs):
+            print(f"{self.onnx_node.name}: {s}", **kwargs)
+
         with ACCLOp.lock:
             barrier = ACCLOp.barriers[edge_name]
 
@@ -82,20 +108,12 @@ class ACCLOp(HLSCustomOp):
                 )
 
             if idx == 0:
-                emulator_dir = f"{os.environ['FINN_ROOT']}/ACCL/test/model/emulator"
                 world_size = self.get_nodeattr("worldSize")
+                emulator = start_emulator(world_size, "simulator")
 
-                # Make sure the emulator binary is built before we start it
-                subprocess.run(
-                    ["/usr/bin/cmake", "."],
-                    cwd=emulator_dir,
-                    stdout=subprocess.PIPE
-                )
-                emulator = subprocess.Popen([
-                    "python3", "run.py", f"-n {world_size}", "--no-kernel-loopback"
-                ], cwd=emulator_dir)
+            barrier.wait(timeout=timeout_s)
 
-            barrier.wait(timeout=60)
+            node_print("Starting executable")
 
             p = subprocess.Popen(
                 executable_path,
@@ -105,7 +123,7 @@ class ACCLOp(HLSCustomOp):
             )
 
             while line := p.stdout.readline():
-                print(line, end='')
+                node_print(line, end='')
                 if "CCLO BFM started" in line:
                     break
             else:
@@ -446,6 +464,9 @@ class ACCLIn(ACCLOp):
                 data_to_cclo
             );
             '''.format(start_port, rank, world_size),
+            'std::unique_ptr<ACCL::ACCL> accl = init_accl({}, {}, {});'.format(
+                world_size, rank, start_port
+            ),
         ]
 
     def docompute(self):

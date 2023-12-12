@@ -204,24 +204,26 @@ def build_distributed_dataflow_cfg(model_filename, cfg: DataflowBuildConfig):
         print("Dataflow should be split up as part of distributed build")
         return -1
 
+    split_idx = step_names.index(split_step) + 1
+
     global_cfg = deepcopy(cfg)
-    global_cfg.steps = steps[:step_names.index(split_step) + 1]
+    global_cfg.steps = steps[:split_idx]
 
     local_cfg = deepcopy(cfg)
-    local_cfg.steps = steps[step_names.index(split_step) + 1:]
+    local_cfg.steps = steps[split_idx:]
 
     if not cfg.save_intermediate_models:
         print("save_intermediate_models must be enabled for distributed build")
         return -1
 
-    if not cfg.start_step or cfg.start_step in global_cfg.steps:
+    if not cfg.start_step or cfg.start_step in step_names[:split_idx]:
         if build_dataflow_cfg(model_filename, global_cfg) != 0:
             print("Global build failed")
             return -1
 
         local_cfg.start_step = None
 
-    if cfg.stop_step and cfg.stop_step in global_cfg.steps:
+    if cfg.stop_step and cfg.stop_step in step_names[:split_idx]:
         return 0
 
     intermediate_models_dir = cfg.output_dir + "/intermediate_models"
