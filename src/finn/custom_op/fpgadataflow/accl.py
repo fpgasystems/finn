@@ -21,12 +21,15 @@ def start_emulator(world_size, emulation_type='cpp'):
     if emulation_type == "cpp":
         build_dir = f"{os.environ['FINN_ROOT']}/ACCL/test/model/emulator"
     elif emulation_type == "rtl":
-        hw_build_dir = f"{os.environ['FINN_ROOT']}/ACCL/kernels/cclo"
-        subprocess.run(
-            ["make", "STACK_TYPE=TCP", "EN_FANIN=1", "simdll"],
-            cwd=hw_build_dir,
-            stdout=subprocess.PIPE
-        )
+        print("Please make sure you built the accl simulator")
+        # At the moment this does not work. Have to build it manually outside the docker
+        # container.
+        # hw_build_dir = f"{os.environ['FINN_ROOT']}/ACCL/kernels/cclo"
+        # subprocess.run(
+        #     ["make", "STACK_TYPE=TCP", "EN_FANIN=1", "simdll"],
+        #     cwd=hw_build_dir,
+        #     stdout=subprocess.PIPE
+        # )
         build_dir = f"{os.environ['FINN_ROOT']}/ACCL/test/model/simulator"
 
     subprocess.run(
