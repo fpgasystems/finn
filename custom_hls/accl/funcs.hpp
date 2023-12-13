@@ -46,6 +46,16 @@ void accl_out(
     ap_uint<accl_width> accl_word;
     ap_uint<stream_width> stream_word;
 
+    // Currently the hls driver does not allow us to make an async call, so we have to do
+    // it manually.
+    accl.start_call(
+        ACCL_SEND, num_transfer_bits / 32,
+        comm_adr, dest_rank, 0, data_from_cclo_id,
+        dpcfg_adr, cflags, sflags | 0x2,
+        0, 0, 0
+    );
+
+
     send: for (int i = 0; i < num_bits - step + 1; i += step) {
         if (i % stream_width == 0) {
             stream_word = in.read();
@@ -65,14 +75,6 @@ void accl_out(
         data.push(accl_word, 0);
     }
 
-    // Currently the hls driver does not allow us to make an async call, so we have to do
-    // it manually.
-    accl.start_call(
-        ACCL_SEND, num_transfer_bits / 32,
-        comm_adr, dest_rank, 0, data_from_cclo_id,
-        dpcfg_adr, cflags, sflags | 0x2,
-        0, 0, 0
-    );
 
 #ifdef CPPSIM
     std::cerr << "accl_out waiting on ack" << std::endl;
