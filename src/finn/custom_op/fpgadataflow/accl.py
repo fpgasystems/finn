@@ -112,7 +112,7 @@ class ACCLOp(HLSCustomOp):
 
             if idx == 0:
                 world_size = self.get_nodeattr("worldSize")
-                emulator = start_emulator(world_size, "simulator")
+                emulator = start_emulator(world_size, "cpp")
 
             barrier.wait(timeout=timeout_s)
 
@@ -186,7 +186,7 @@ class ACCLOp(HLSCustomOp):
         return self.get_input_datatype()
 
     def global_includes(self):
-        self.code_gen_dict["$GLOBALS$"] = []
+        self.code_gen_dict["$GLOBALS$"] = ['']
 
     def defines(self, mode):
         # Do the includes here as well as they have dependencies on the defines
@@ -247,7 +247,8 @@ class ACCLOut(ACCLOp):
             '#pragma HLS INTERFACE axis port=in0_{}'.format(self.hls_sname()),
             "#pragma HLS INTERFACE s_axilite port=dpcfg_adr bundle=control",
             "#pragma HLS INTERFACE s_axilite port=comm_adr bundle=control",
-            "#pragma HLS INTERFACE ap_ctrl_none port=return",
+            "#pragma HLS INTERFACE s_axilite port=num_iters bundle=control",
+            "#pragma HLS INTERFACE ap_ctrl_hs port=return",
         ]
 
     def strm_decl(self):
@@ -280,6 +281,7 @@ class ACCLOut(ACCLOp):
             'std::unique_ptr<ACCL::ACCL> accl = init_accl({}, {}, {});'.format(
                 world_size, rank, start_port
             ),
+            'int num_iters = 1;',
             'bool wait_for_ack = true;',
             'ap_uint<32> comm_adr = accl->get_communicator_addr();',
             '''
@@ -302,18 +304,17 @@ class ACCLOut(ACCLOp):
 
         self.code_gen_dict["$DOCOMPUTE$"] = [
             f'''
-            if (!in0_{self.hls_sname()}.empty()) {{
-                accl_out<{stream_width}, {num_bits}, {step}>(
-                    {dest},
-                    comm_adr,
-                    dpcfg_adr,
-                    cmd_to_cclo,
-                    sts_from_cclo,
-                    data_to_cclo,
-                    in0_{self.hls_sname()},
-                    wait_for_ack
-                );
-            }}
+            accl_out<{stream_width}, {num_bits}, {step}>(
+                {dest},
+                comm_adr,
+                dpcfg_adr,
+                num_iters,
+                cmd_to_cclo,
+                sts_from_cclo,
+                data_to_cclo,
+                in0_{self.hls_sname()},
+                wait_for_ack
+            );
             #ifdef CPPSIM
             cclo->stop();
             #endif
@@ -389,6 +390,7 @@ class ACCLOut(ACCLOp):
                 STREAM<stream_word> &data_to_cclo,
                 ap_uint<32> comm_adr,
                 ap_uint<32> dpcfg_adr,
+                ap_uint<32> num_iters,
                 hls::stream<ap_uint<{}>> &in0_{},
                 bool wait_for_ack
             )'''

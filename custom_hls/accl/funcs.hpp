@@ -11,6 +11,7 @@ void accl_out(
     unsigned int dest_rank,
     ap_uint<32> comm_adr,
     ap_uint<32> dpcfg_adr,
+    ap_uint<32> num_iters,
     STREAM<command_word> &cmd_to_cclo,
     STREAM<command_word> &sts_from_cclo,
     STREAM<stream_word> &data_to_cclo,
@@ -46,45 +47,46 @@ void accl_out(
     ap_uint<accl_width> accl_word;
     ap_uint<stream_width> stream_word;
 
-    // Currently the hls driver does not allow us to make an async call, so we have to do
-    // it manually.
-    accl.start_call(
-        ACCL_SEND, num_transfer_bits / 32,
-        comm_adr, dest_rank, 0, data_from_cclo_id,
-        dpcfg_adr, cflags, sflags | 0x2,
-        0, 0, 0
-    );
+    for (int j = 0; j < num_iters; j++) {
+        // Currently the hls driver does not allow us to make an async call, so we have to do
+        // it manually.
+        accl.start_call(
+            ACCL_SEND, num_transfer_bits / 32,
+            comm_adr, dest_rank, 0, data_from_cclo_id,
+            dpcfg_adr, cflags, sflags | 0x2,
+            0, 0, 0
+        );
 
+        send: for (int i = 0; i < num_bits - step + 1; i += step) {
+            if (i % stream_width == 0) {
+                stream_word = in.read();
+            }
 
-    send: for (int i = 0; i < num_bits - step + 1; i += step) {
-        if (i % stream_width == 0) {
-            stream_word = in.read();
+            int ni = i + step - 1;
+
+            accl_word(ni % accl_width, i % accl_width) =
+                stream_word(ni % stream_width, i % stream_width);
+
+            if ((ni + 1) % accl_width == 0) {
+                data.push(accl_word, 0);
+            }
         }
 
-        int ni = i + step - 1;
-
-        accl_word(ni % accl_width, i % accl_width) =
-            stream_word(ni % stream_width, i % stream_width);
-
-        if ((ni + 1) % accl_width == 0) {
+        if (num_bits < num_transfer_bits) {
             data.push(accl_word, 0);
         }
-    }
-
-    if (num_bits < num_transfer_bits) {
-        data.push(accl_word, 0);
-    }
 
 
 #ifdef CPPSIM
-    std::cerr << "accl_out waiting on ack" << std::endl;
+        std::cerr << "accl_out waiting on ack" << std::endl;
 #endif
 
-    if (wait_for_ack) accl.finalize_call();
+        if (wait_for_ack) accl.finalize_call();
 
 #ifdef CPPSIM
-    std::cerr << "accl_out finished" << std::endl;
+        std::cerr << "accl_out finished" << std::endl;
 #endif
+    }
 }
 
 template<unsigned int stream_width, unsigned int num_bits, unsigned int step>

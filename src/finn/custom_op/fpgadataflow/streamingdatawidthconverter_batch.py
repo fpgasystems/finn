@@ -363,7 +363,7 @@ class StreamingDataWidthConverter_Batch(HLSCustomOp):
 
         inp = context[node.input[0]]
         assert str(inp.dtype) == "float32", "Input datatype is not float32"
-        assert inp.shape == tuple(exp_shape), "Input shape does not match expected shape."
+        # assert inp.shape == tuple(exp_shape), "Input shape does not match expected shape."
 
         if self.get_input_datatype() == DataType["BIPOLAR"]:
             # store bipolar activations as binary

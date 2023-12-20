@@ -5,11 +5,11 @@ import numpy as np
 import finn.builder.build_dataflow as build
 import finn.builder.build_dataflow_config as build_cfg
 
-unsw_nb15_data = np.load("./unsw_nb15_binarized.npz")
+# unsw_nb15_data = np.load("./unsw_nb15_binarized.npz")
 
-inp = unsw_nb15_data["train"][:, :-1]
-inp = np.concatenate([inp, np.zeros((inp.shape[0], 7))], -1).astype(np.float32)
-out = unsw_nb15_data["train"][:, -1].astype(np.float32)
+inp = np.zeros((1, 600)).astype(np.float32) # unsw_nb15_data["train"][:, :-1]
+# inp = np.concatenate([inp, np.zeros((inp.shape[0], 7))], -1).astype(np.float32)
+out = np.zeros((1, 1)).astype(np.float32) # unsw_nb15_data["train"][:, -1].astype(np.float32)
 
 indices = np.where(out == 0)[0][:1]
 
@@ -22,7 +22,7 @@ np.save(open("expected_output.npy", "wb"), out)
 model_dir = os.environ['FINN_ROOT'] + "/notebooks/end2end_example/cybersecurity"
 model_file = model_dir + "/cybsec-mlp-ready.onnx"
 
-estimates_output_dir = "three_boards"
+estimates_output_dir = "sim_test"
 
 os.environ["RTLSIM_TRACE_DEPTH"] = "3"
 
@@ -35,13 +35,15 @@ steps = [
     "step_target_fps_parallelization",
     "step_apply_folding_config",
     "step_minimize_bit_width",
+    "step_hls_codegen",
+    "step_hls_ipgen",
+    "step_set_fifo_depths",
     "step_assign_partition_ids",
     "step_insert_accl",
     "step_split_dataflow",
     "step_generate_estimate_reports",
     "step_hls_codegen",
     "step_hls_ipgen",
-    "step_set_fifo_depths",
     "step_create_stitched_ip",
 ]
 
@@ -51,7 +53,7 @@ cfg_splits = build.DataflowBuildConfig(
     steps               = steps,
     mvau_wwidth_max     = 80,
     target_fps          = 1000000,
-    synth_clk_period_ns = 10.0,
+    synth_clk_period_ns = 6.66,
     generate_outputs    = [
         build_cfg.DataflowOutputType.ESTIMATE_REPORTS,
         build_cfg.DataflowOutputType.STITCHED_IP,
@@ -61,7 +63,8 @@ cfg_splits = build.DataflowBuildConfig(
     shell_flow_type     = build_cfg.ShellFlowType.VITIS_ALVEO,
     board               = "U55C",
     num_boards          = 2,
-    # start_step="step_set_fifo_depths",
+    start_step="step_assign_partition_ids",
+    # stop_step="step_insert_accl",
     save_intermediate_models = True,
 )
 

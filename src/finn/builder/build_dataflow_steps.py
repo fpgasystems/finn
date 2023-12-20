@@ -148,6 +148,7 @@ def verify_step(
     for b in range(bsize_in):
         in_npy = np.expand_dims(in_npy_all[b], axis=0)
         exp_out_npy = np.expand_dims(exp_out_npy_all[b], axis=0)
+
         if need_parent:
             assert cfg.save_intermediate_models, "Enable save_intermediate_models for verification"
             parent_model_fn = intermediate_models_dir + "/dataflow_parent.onnx"
@@ -452,6 +453,8 @@ def step_insert_accl(model: ModelWrapper, cfg: DataflowBuildConfig):
         model = model.transform(PrepareCppSim())
         model = model.transform(CompileCppSim())
         model = model.transform(SetExecMode("cppsim"))
+
+        model.set_metadata_prop("exec_mode", "")
         verify_step(model, cfg, "folded_hls_cppsim", need_parent=True)
 
     return model

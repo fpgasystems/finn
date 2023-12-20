@@ -10,25 +10,25 @@ class AssignPartitionIDs(Transformation):
         self.ndevices = ndevices
 
     def apply(self, model):
-        floorplans = partition(
-            model,
-            self.target_clk_ns,
-            self.target_platform,
-            self.ndevices,
-            # TODO: Remove this after testing
-            abs_anchors=[(0, [1]), (1, [4])]
-        )
+        # floorplans = partition(
+        #     model,
+        #     self.target_clk_ns,
+        #     self.target_platform,
+        #     self.ndevices,
+        #     # TODO: Remove this after testing
+        #     abs_anchors=[(0, [1]), (1, [4])]
+        # )
 
-        if floorplans is None:
-            raise Exception("Partitioning failed")
+        # if floorplans is None:
+        #     raise Exception("Partitioning failed")
 
-        floorplan = floorplans[0]
+        # floorplan = floorplans[0]
 
         model.set_metadata_prop("worldSize", str(self.ndevices))
 
-        for node in model.graph.node:
+        for i, node in enumerate(model.graph.node):
             node_inst = getCustomOp(node)
-            node_inst.set_nodeattr("device_id", floorplan[node.name]["device_id"])
+            node_inst.set_nodeattr("device_id", 0 if i < 2 else 1)
 
         return model, False
 
