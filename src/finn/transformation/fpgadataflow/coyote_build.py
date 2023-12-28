@@ -394,6 +394,58 @@ class AXI4Stream(AXIInterface):
             else:
                 tdest_simple_wire.connect(design, tid_simple_wire)
 
+    def connect(self, design: "Design", other: "AXI4Stream", is_self_input: bool = True) -> None:
+        assert not other.connected
+        assert not self.connected
+        assert not self.external
+
+        if self["tdata"] != other["tdata"]:
+            input: AXI4Stream = self if is_self_input else other
+            output: AXI4Stream = other if is_self_input else self
+            # We need to istantiate a converter here
+
+            # NOTE: TLast is based on the input stream.
+            # We consider it ok to leave it unconnected if the input does not have TLast.
+            input_to_output_converter = CoyoteBuild.create_converter(
+                "%s_to_%s" % (input.name, output.name),
+                input.tlast,
+                input["tdata"],
+                output["tdata"],
+            )
+
+            instantiation_name = "%s_inst" % input_to_output_converter.module_name
+            design.instantiations[instantiation_name] = Instantiation(
+                instantiation_name=instantiation_name,
+                ip=input_to_output_converter,
+            )
+
+            design.ips.add(design.instantiations[instantiation_name].ip)
+
+            assert isinstance(design.instantiations[instantiation_name]["s_axis"], AXI4Stream)
+            assert isinstance(design.instantiations[instantiation_name]["m_axis"], AXI4Stream)
+
+            s_axis_signal: AXIInterface = design.instantiations[instantiation_name]["s_axis"]  # type: ignore
+            m_axis_signal: AXIInterface = design.instantiations[instantiation_name]["m_axis"]  # type: ignore
+
+            if input.external:
+                AXIInterface.connect(s_axis_signal, design, input)
+            else:
+                AXIInterface.connect(input, design, s_axis_signal)
+
+            design.instantiations[instantiation_name]["aclk"].connect(
+                design, design.external_interface["aclk"]
+            )
+
+            design.instantiations[instantiation_name]["aresetn"].connect(
+                design, design.external_interface["aresetn"]
+            )
+
+            AXIInterface.connect(m_axis_signal, design, output)
+
+            return
+
+        AXIInterface.connect(self, design, other)
+
     def __str__(self):
         return "Interface type: AXI4Stream\n%s" % super().__str__()
 
