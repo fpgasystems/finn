@@ -424,8 +424,8 @@ class AXI4Stream(AXIInterface):
             assert isinstance(design.instantiations[instantiation_name]["s_axis"], AXI4Stream)
             assert isinstance(design.instantiations[instantiation_name]["m_axis"], AXI4Stream)
 
-            s_axis_signal: AXIInterface = design.instantiations[instantiation_name]["s_axis"]  # type: ignore
-            m_axis_signal: AXIInterface = design.instantiations[instantiation_name]["m_axis"]  # type: ignore
+            s_axis_signal: AXIInterface = design.instantiations[instantiation_name]["s_axis"]
+            m_axis_signal: AXIInterface = design.instantiations[instantiation_name]["m_axis"]
 
             if input.external:
                 AXIInterface.connect(s_axis_signal, design, input)
@@ -738,6 +738,47 @@ class CreateHLSBridge(Transformation):
         assert (
             process_vitis_hls.returncode == 0
         ), "Failed to run hls bridge generation in Vitis_HLS, command is: %s" % " ".join(
+            vitis_hls_cmd
+        )
+
+        os.chdir(finn_cwd)
+
+        model.set_metadata_prop(
+            "hls_bridge_ip_path",
+            (hls_bridge_folder / "hls_bridge" / "hls_bridge_sol" / "impl" / "ip").__str__(),
+        )
+
+        return (model, False)
+
+
+class CreateHLSBridge(Transformation):
+    """
+    Creates an HLS bridge to allow writing the weights with a limited address space.
+    """
+
+    fpga_part: str
+
+    def __init__(self, fpga_part: str):
+        super().__init__()
+        self.fpga_part = fpga_part
+
+    def apply(self, model):
+        hls_bridge_folder: Path = Path(make_build_dir())
+        finn_cwd = os.getcwd()
+        os.chdir(hls_bridge_folder)
+
+        c_file = hls_bridge_folder / "bridge.c"
+        with open(c_file, "w") as text_file:
+            text_file.write(templates.hls_bridge)
+
+        hls_script = templates.hls_bridge_script.replace("$PART$", self.fpga_part)
+
+        vitis_hls_cmd = ["vitis_hls", "-eval", hls_script]
+        process_vitis_hls = subprocess.Popen(vitis_hls_cmd, stdout=subprocess.PIPE)
+        process_vitis_hls.communicate()
+        assert (
+            process_vitis_hls.returncode == 0
+        ), "Failed to run hls bridge generation in Vitis_HLS,command is: %s" % " ".join(
             vitis_hls_cmd
         )
 
@@ -1491,8 +1532,6 @@ class CoyoteBuild(Transformation):
             ]
             return (ips, axilites_connections, intra_connections_tcl, address_map_outer)
 
-        # NOTE: AXI4L address sent through the Coyote interface start at 0x12_0000
-        COYOTE_BASE_ADDR = 0x12_0000
         (
             interconnects,
             interconnects_axilites_connections,
