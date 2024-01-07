@@ -399,7 +399,10 @@ class AXI4Stream(AXIInterface):
         assert not self.connected
         assert not self.external
 
-        if self["tdata"] != other["tdata"]:
+        # NOTE: We restricted meta_intf to only be possible for external interfaces
+        # So we only need to check it for other
+
+        if not other.is_meta_intf and self["tdata"] != other["tdata"]:
             input: AXI4Stream = self if is_self_input else other
             output: AXI4Stream = other if is_self_input else self
             # We need to instantiate a converter here
@@ -432,19 +435,60 @@ class AXI4Stream(AXIInterface):
             else:
                 AXIInterface.connect(input, design, s_axis_signal)
 
-            design.instantiations[instantiation_name]["aclk"].connect(
-                design, design.external_interface["aclk"]
-            )
-
-            design.instantiations[instantiation_name]["aresetn"].connect(
-                design, design.external_interface["aresetn"]
-            )
-
             AXIInterface.connect(m_axis_signal, design, output)
+        elif other.is_meta_intf and self["tdata"] != other["data"]:
+            raise Exception(
+                "Meta intf interfaces cannot connect to interfaces of different widths.\nFirst "
+                f"interface is:\n{self}\n Second interface is:\n{other}"
+            )
+        else:
+            AXIInterface.connect(self, design, other)
 
-            return
+        if self.connect_tid_to_tdest and other.connect_tid_to_tdest:
+            tid_owner: AXI4Stream = self
+            tdest_owner: AXI4Stream = other
+            if (
+                self.sub_signals.get("tid") is not None and other.sub_signals.get("tid") is None
+            ) or (
+                self.sub_signals.get("tdest") is not None and other.sub_signals.get("tdest") is None
+            ):
+                if (
+                    self.sub_signals.get("tdest") is not None
+                    and other.sub_signals.get("tdest") is None
+                ):
+                    tdest_owner = self
+                    tid_owner = other
 
-        AXIInterface.connect(self, design, other)
+            else:
+                raise Exception(
+                    "Trying to connect tid from one interface to the tdest of another but both "
+                    "interfaces provide the same signal!\n"
+                    f"First interface is:\n{self}\nOther is:\n{other}"
+                )
+
+            assert tid_owner.sub_signals["tid"] == tdest_owner.sub_signals["tdest"]
+            tid_simple_wire: SimpleWire = SimpleWire(
+                name=AXIInterface.get_full_signal_name(tid_owner.name, tid_owner.delimiter, "tid"),
+                width=tid_owner.sub_signals["tid"],
+            )
+            tid_simple_wire.owner = tid_owner.owner
+            tdest_simple_wire: SimpleWire = SimpleWire(
+                name=AXIInterface.get_full_signal_name(
+                    tdest_owner.name, tdest_owner.delimiter, "tdest"
+                ),
+                width=tdest_owner.sub_signals["tdest"],
+            )
+            tdest_simple_wire.owner = tdest_owner.owner
+
+            tid_simple_wire.external = tid_simple_wire.external
+            tdest_simple_wire.external = tdest_owner.external
+
+            # NOTE: We are guaranteed that exactly one of the two interfaces is external
+            assert self.external ^ other.external
+            if not tid_owner.external:
+                tid_simple_wire.connect(design, tdest_simple_wire)
+            else:
+                tdest_simple_wire.connect(design, tid_simple_wire)
 
     def __str__(self):
         return "Interface type: AXI4Stream\n%s" % super().__str__()
@@ -594,7 +638,7 @@ class BD:
     to the outside
     """
 
-    module_name: str
+    bd_name: str
     ips: Optional[List[IP]]
     interfaces: Dict[str, Interface]
     intra_connections: Sequence[str]
@@ -753,7 +797,7 @@ class CreateHLSBridge(Transformation):
 
 class CreateHLSBridge(Transformation):
     """
-    Creates an HLS bridge to allow writing the weights with a limited address space.
+    Creates an HLS bridge to allow writing the weights with a unlimited address space.
     """
 
     fpga_part: str
@@ -779,7 +823,7 @@ class CreateHLSBridge(Transformation):
         process_vitis_hls.communicate()
         assert (
             process_vitis_hls.returncode == 0
-        ), "Failed to run hls bridge generation in Vitis_HLS,command is: %s" % " ".join(
+        ), "Failed to run hls bridge generation in Vitis_HLS, command is: %s" % " ".join(
             vitis_hls_cmd
         )
 
@@ -1061,8 +1105,6 @@ class GenerateCoyoteProject(Transformation):
         ), "Failed to run project automation in Vivado,command is: %s" % " ".join(vivado_cmd)
 
         os.chdir(finn_cwd)
-
-        model.set_metadata_prop("coyote_hw_build", self.coyote_hw_build_dir.__str__())
 
         return (model, False)
 
