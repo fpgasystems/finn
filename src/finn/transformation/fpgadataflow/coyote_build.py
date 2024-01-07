@@ -1340,7 +1340,7 @@ class CoyoteBuild(Transformation):
                 # interconnect
                 remaining_axilites = axilites_list_list[MAX_AMOUNT_OF_AXILITES - 1][0]
                 # NOTE: Once everything is collapsed, we cut after the 15th element
-                axilites_list_list = axilites_list_list[: MAX_AMOUNT_OF_AXILITES - 1]
+                axilites_list_list = axilites_list_list[:MAX_AMOUNT_OF_AXILITES]
 
             axilites_list_list_with_indices = [
                 (i, elem) for i, elem in enumerate(axilites_list_list)
