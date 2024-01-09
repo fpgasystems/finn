@@ -37,8 +37,9 @@ from abc import ABC, abstractmethod
 from enum import Enum
 from pathlib import Path
 from qonnx.core.modelwrapper import ModelWrapper
-from qonnx.custom_op.base import CustomOp
-from qonnx.custom_op.registry import getCustomOp
+
+# from qonnx.custom_op.base import CustomOp
+# from qonnx.custom_op.registry import getCustomOp
 from qonnx.transformation.base import Transformation
 from qonnx.transformation.general import GiveUniqueNodeNames
 from shutil import copy
@@ -48,7 +49,8 @@ from typing_extensions import TypeAlias
 import finn.custom_op.fpgadataflow.templates_coyote as templates
 from finn.transformation.fpgadataflow.create_stitched_ip import CreateStitchedIP
 from finn.transformation.fpgadataflow.hlssynth_ip import HLSSynthIP
-from finn.transformation.fpgadataflow.insert_tlastmarker import InsertTLastMarker
+
+# from finn.transformation.fpgadataflow.insert_tlastmarker import InsertTLastMarker
 from finn.transformation.fpgadataflow.prepare_ip import PrepareIP
 from finn.transformation.fpgadataflow.replace_verilog_relpaths import (
     ReplaceVerilogRelPaths,
@@ -1725,6 +1727,9 @@ class CoyoteBuild(Transformation):
 
         CoyoteBuild.__update_intf_axilite_control(intf_names["axilite"])
         weight_start_idx = CoyoteBuild.__update_intf_axilite_weight(intf_names["axilite"])
+        print(f"Weight idx is: {weight_start_idx}")
+
+        print(f"Axilites after update:\n{intf_names['axilite']}")
 
         if not is_accl_mode:
             assert len(intf_names["s_axis"]) == 1, "Only support one toplevel input"
