@@ -37,9 +37,8 @@ from abc import ABC, abstractmethod
 from enum import Enum
 from pathlib import Path
 from qonnx.core.modelwrapper import ModelWrapper
-
-# from qonnx.custom_op.base import CustomOp
-# from qonnx.custom_op.registry import getCustomOp
+from qonnx.custom_op.base import CustomOp
+from qonnx.custom_op.registry import getCustomOp
 from qonnx.transformation.base import Transformation
 from qonnx.transformation.general import GiveUniqueNodeNames
 from shutil import copy
@@ -49,8 +48,7 @@ from typing_extensions import TypeAlias
 import finn.custom_op.fpgadataflow.templates_coyote as templates
 from finn.transformation.fpgadataflow.create_stitched_ip import CreateStitchedIP
 from finn.transformation.fpgadataflow.hlssynth_ip import HLSSynthIP
-
-# from finn.transformation.fpgadataflow.insert_tlastmarker import InsertTLastMarker
+from finn.transformation.fpgadataflow.insert_tlastmarker import InsertTLastMarker
 from finn.transformation.fpgadataflow.prepare_ip import PrepareIP
 from finn.transformation.fpgadataflow.replace_verilog_relpaths import (
     ReplaceVerilogRelPaths,
