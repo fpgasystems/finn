@@ -402,7 +402,7 @@ class AXI4Stream(AXIInterface):
         if self["tdata"] != other["tdata"]:
             input: AXI4Stream = self if is_self_input else other
             output: AXI4Stream = other if is_self_input else self
-            # We need to istantiate a converter here
+            # We need to instantiate a converter here
 
             # NOTE: TLast is based on the input stream.
             # We consider it ok to leave it unconnected if the input does not have TLast.
