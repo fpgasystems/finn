@@ -638,7 +638,7 @@ class BD:
     to the outside
     """
 
-    bd_name: str
+    module_name: str
     ips: Optional[List[IP]]
     interfaces: Dict[str, Interface]
     intra_connections: Sequence[str]
