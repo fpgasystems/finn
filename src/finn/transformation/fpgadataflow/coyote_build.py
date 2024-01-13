@@ -1725,9 +1725,6 @@ class CoyoteBuild(Transformation):
 
         CoyoteBuild.__update_intf_axilite_control(intf_names["axilite"])
         weight_start_idx = CoyoteBuild.__update_intf_axilite_weight(intf_names["axilite"])
-        print(f"Weight idx is: {weight_start_idx}")
-
-        print(f"Axilites after update:\n{intf_names['axilite']}")
 
         if not is_accl_mode:
             assert len(intf_names["s_axis"]) == 1, "Only support one toplevel input"
