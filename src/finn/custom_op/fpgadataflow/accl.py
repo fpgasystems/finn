@@ -69,7 +69,7 @@ class ACCLOp(HLSCustomOp):
         with ACCLOp.lock:
             barrier = ACCLOp.barriers[edge_name]
 
-        timeout_s = 20
+        timeout_s = None
         idx = barrier.wait(timeout=timeout_s)
 
         emulator = None
